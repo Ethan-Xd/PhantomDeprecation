@@ -1,0 +1,5 @@
+name: PhantomDeprecation
+version: ${project.version}
+main: me.gamingti.phantomdeprecation.PhantomDeprecation
+api-version: 1.13
+website: gamingti.me
