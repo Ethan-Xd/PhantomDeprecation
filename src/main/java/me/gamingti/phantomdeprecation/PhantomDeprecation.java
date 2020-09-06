@@ -1,15 +1,10 @@
 package me.gamingti.phantomdeprecation;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
-import org.bukkit.inventory.BrewerInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -24,25 +19,6 @@ public final class PhantomDeprecation extends JavaPlugin implements Listener {
 	@Override
 	public void onEnable() {
 		getServer().getPluginManager().registerEvents(this, this);
-	}
-
-	@EventHandler
-	public void onInventoryClick(InventoryClickEvent e) {
-		if (!(e.getWhoClicked() instanceof Player)) return;
-		Player player = (Player) e.getWhoClicked();
-
-		int eventSlot = e.getRawSlot();
-
-		if (e.getView().getType() == InventoryType.BREWING) {
-			if (eventSlot != 3) return;
-			if (player.getItemOnCursor().getType() != Material.FEATHER) return;
-
-			BrewerInventory brewer = (BrewerInventory) e.getInventory();
-
-			brewer.setItem(eventSlot, player.getItemOnCursor());
-
-			player.setItemOnCursor(new ItemStack(Material.AIR));
-		}
 	}
 
 	@EventHandler
