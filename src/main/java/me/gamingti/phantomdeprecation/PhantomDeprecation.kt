@@ -35,7 +35,7 @@ class PhantomDeprecation : JavaPlugin(), Listener {
 
         // Display XP cost
         var xpCost = elytraMetaR.repairCost + leatherUsing
-        if (anvil.renameText !== elytraMeta.displayName && !anvil.renameText.isEmpty()) xpCost += 1
+        if (anvil.renameText !== elytraMeta.displayName && anvil.renameText.isNotEmpty()) xpCost += 1
         anvil.repairCost = xpCost
         e.result = newElytra
         //((Player)e.getViewers().get(0)).updateInventory();
