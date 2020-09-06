@@ -1,102 +1,89 @@
-package me.gamingti.phantomdeprecation;
+package me.gamingti.phantomdeprecation
 
-import org.bukkit.Material;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.PrepareAnvilEvent;
-import org.bukkit.inventory.AnvilInventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.Repairable;
-import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.Material
+import org.bukkit.event.EventHandler
+import org.bukkit.event.Listener
+import org.bukkit.event.inventory.PrepareAnvilEvent
+import org.bukkit.inventory.AnvilInventory
+import org.bukkit.inventory.ItemStack
+import org.bukkit.inventory.meta.Damageable
+import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.inventory.meta.Repairable
+import org.bukkit.plugin.java.JavaPlugin
+import kotlin.math.ceil
 
-public final class PhantomDeprecation extends JavaPlugin implements Listener {
+class PhantomDeprecation : JavaPlugin(), Listener {
+    // How many damage points items should be repaired by
+    var fixStep = 108
+    override fun onEnable() {
+        server.pluginManager.registerEvents(this, this)
+    }
 
-	// How many damage points items should be repaired by
-	int fixStep = 108;
+    @EventHandler
+    fun onPrepareAnvil(e: PrepareAnvilEvent) {
+        val anvil = e.inventory as AnvilInventory
+        if (!anvilOutputCondition(anvil)) return
+        val elytra = anvil.getItem(0)
+        val elytraMeta = elytra.itemMeta
+        val elytraMetaR = elytraMeta as Repairable
+        val elytraMetaD = elytraMeta as Damageable
+        val leather = anvil.getItem(1)
+        var leatherUsing = leather.amount
+        val maximumLeatherToUse = ceil(elytraMetaD.damage / fixStep.toDouble()).toInt() + 1
+        if (leatherUsing > maximumLeatherToUse) leatherUsing = maximumLeatherToUse
+        val newElytra = getRepairedElytra(elytra, leatherUsing, anvil.renameText)
 
-	@Override
-	public void onEnable() {
-		getServer().getPluginManager().registerEvents(this, this);
-	}
+        // Display XP cost
+        var xpCost = elytraMetaR.repairCost + leatherUsing
+        if (anvil.renameText !== elytraMeta.displayName && !anvil.renameText.isEmpty()) xpCost += 1
+        anvil.repairCost = xpCost
+        e.result = newElytra
+        //((Player)e.getViewers().get(0)).updateInventory();
 
-	@EventHandler
-	public void onPrepareAnvil(PrepareAnvilEvent e) {
-		AnvilInventory anvil = (AnvilInventory) e.getInventory();
+        // TODO: Fix all leather being used when repairing elytra if stack has overpay (#2)
+    }
 
-		if (!anvilOutputCondition(anvil)) return;
+    // Return the repaired elytra ItemStack
+    private fun getRepairedElytra(elytra: ItemStack, leatherAmount: Int, renameText: String): ItemStack {
+        val elytraMeta = elytra.itemMeta
+        val elytraMetaR = elytraMeta as Repairable
+        val elytraMetaD = elytraMeta as Damageable
+        var newDamage = elytraMetaD.damage - leatherAmount * fixStep
+        if (newDamage < 0) newDamage = 0
+        val repairedElytra = ItemStack(elytra)
 
-		ItemStack elytra = anvil.getItem(0);
-		ItemMeta elytraMeta = elytra.getItemMeta();
-		Repairable elytraMetaR = (Repairable) elytraMeta;
-		Damageable elytraMetaD = (Damageable) elytraMeta;
+        // Set new damage
+        elytraMetaD.damage = newDamage
+        repairedElytra.itemMeta = elytraMetaD as ItemMeta
 
-		ItemStack leather = anvil.getItem(1);
-		int leatherUsing = leather.getAmount();
-		int maximumLeatherToUse = (int) Math.ceil(elytraMetaD.getDamage() / fixStep) + 1;
-		if (leatherUsing > maximumLeatherToUse) leatherUsing = maximumLeatherToUse;
+        // Set new repair cost
+        elytraMetaR.repairCost = elytraMetaR.repairCost * 2 + 1
+        repairedElytra.itemMeta = elytraMetaR as ItemMeta
 
-		ItemStack newElytra = getRepairedElytra(elytra, leatherUsing, anvil.getRenameText());
+        // If changed name, change it
+        if (renameText !== repairedElytra.itemMeta.displayName && !renameText.isEmpty()) {
+            val elytraDisplayName = repairedElytra.itemMeta
+            elytraDisplayName.displayName = renameText
+            repairedElytra.itemMeta = elytraDisplayName
+        }
+        return repairedElytra
+    }
 
-		// Display XP cost
-		int xpCost = elytraMetaR.getRepairCost() + leatherUsing;
-		if (anvil.getRenameText() != elytraMeta.getDisplayName() && !anvil.getRenameText().isEmpty()) xpCost += 1;
-		anvil.setRepairCost(xpCost);
+    // Should the anvil output a new elytra?
+    private fun anvilOutputCondition(anvil: AnvilInventory): Boolean {
+        // Is any slot empty?
+        if (anvil.getItem(0) == null || anvil.getItem(1) == null) return false
 
-		e.setResult(newElytra);
-		//((Player)e.getViewers().get(0)).updateInventory();
+        // Is the first slot an elytra?
+        if (anvil.getItem(0).type != Material.ELYTRA) return false
 
-		// TODO: Fix all leather being used when repairing elytra if stack has overpay (#2)
-	}
+        // Is the second slot leather?
+        if (anvil.getItem(1).type != Material.LEATHER) return false
 
-	// Return the repaired elytra ItemStack
-	private ItemStack getRepairedElytra(ItemStack elytra, int leatherAmount, String renameText) {
-		ItemMeta elytraMeta = elytra.getItemMeta();
-		Repairable elytraMetaR = (Repairable) elytraMeta;
-		Damageable elytraMetaD = (Damageable) elytraMeta;
+        // Is the elytra fully healed?
+        return (anvil.getItem(0).itemMeta as Damageable).damage != 0
 
-		int newDamage = elytraMetaD.getDamage() - (leatherAmount * fixStep);
-		if (newDamage < 0) newDamage = 0;
-
-		ItemStack repairedElytra = new ItemStack(elytra);
-
-		// Set new damage
-		elytraMetaD.setDamage(newDamage);
-		repairedElytra.setItemMeta((ItemMeta)elytraMetaD);
-
-		// Set new repair cost
-		elytraMetaR.setRepairCost((elytraMetaR.getRepairCost() * 2) + 1);
-		repairedElytra.setItemMeta((ItemMeta)elytraMetaR);
-
-		// If changed name, change it
-		if (renameText != repairedElytra.getItemMeta().getDisplayName() && !renameText.isEmpty()) {
-			ItemMeta elytraDisplayName = repairedElytra.getItemMeta();
-			elytraDisplayName.setDisplayName(renameText);
-			repairedElytra.setItemMeta(elytraDisplayName);
-		}
-
-		return repairedElytra;
-	}
-
-	// Should the anvil output a new elytra?
-	private boolean anvilOutputCondition(AnvilInventory anvil) {
-		// Is any slot empty?
-		if (anvil.getItem(0) == null || anvil.getItem(1) == null) return false;
-
-		// Is the first slot an elytra?
-		if (anvil.getItem(0).getType() != Material.ELYTRA) return false;
-
-		// Is the second slot leather?
-		if (anvil.getItem(1).getType() != Material.LEATHER) return false;
-
-		// Is the elytra fully healed?
-		if (((Damageable)anvil.getItem(0).getItemMeta()).getDamage() == 0) return false;
-
-		// TODO: Fix visual glitch when PrepareAnvilEvent is fired and output remains identical to previous result (#1)
-		// Should be possible within this function, if not then put in onPrepareAnvil
-
-		return true;
-	}
-
+        // TODO: Fix visual glitch when PrepareAnvilEvent is fired and output remains identical to previous result (#1)
+        // Should be possible within this function, if not then put in onPrepareAnvil
+    }
 }
