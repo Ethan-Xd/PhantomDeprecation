@@ -1,10 +1,15 @@
 package me.gamingti.phantomdeprecation;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
+import org.bukkit.inventory.BrewerInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -22,8 +27,27 @@ public final class PhantomDeprecation extends JavaPlugin implements Listener {
 	}
 
 	@EventHandler
+	public void onInventoryClick(InventoryClickEvent e) {
+		if (!(e.getWhoClicked() instanceof Player)) return;
+		Player player = (Player) e.getWhoClicked();
+
+		int eventSlot = e.getRawSlot();
+
+		if (e.getView().getType() == InventoryType.BREWING) {
+			if (eventSlot != 3) return;
+			if (player.getItemOnCursor().getType() != Material.FEATHER) return;
+
+			BrewerInventory brewer = (BrewerInventory) e.getInventory();
+
+			brewer.setItem(eventSlot, player.getItemOnCursor());
+
+			player.setItemOnCursor(new ItemStack(Material.AIR));
+		}
+	}
+
+	@EventHandler
 	public void onPrepareAnvil(PrepareAnvilEvent e) {
-		AnvilInventory anvil = (AnvilInventory) e.getInventory();
+		AnvilInventory anvil = e.getInventory();
 
 		if (!anvilOutputCondition(anvil)) return;
 
@@ -41,11 +65,10 @@ public final class PhantomDeprecation extends JavaPlugin implements Listener {
 
 		// Display XP cost
 		int xpCost = elytraMetaR.getRepairCost() + leatherUsing;
-		if (anvil.getRenameText() != elytraMeta.getDisplayName() && !anvil.getRenameText().isEmpty()) xpCost += 1;
+		if (!(anvil.getRenameText().equals(elytraMeta.getDisplayName())) && !anvil.getRenameText().isEmpty()) xpCost += 1;
 		anvil.setRepairCost(xpCost);
 
 		e.setResult(newElytra);
-		//((Player)e.getViewers().get(0)).updateInventory();
 
 		// TODO: Fix all leather being used when repairing elytra if stack has overpay (#2)
 	}
@@ -70,7 +93,7 @@ public final class PhantomDeprecation extends JavaPlugin implements Listener {
 		repairedElytra.setItemMeta((ItemMeta)elytraMetaR);
 
 		// If changed name, change it
-		if (renameText != repairedElytra.getItemMeta().getDisplayName() && !renameText.isEmpty()) {
+		if (!(renameText.equals(repairedElytra.getItemMeta().getDisplayName())) && !renameText.isEmpty()) {
 			ItemMeta elytraDisplayName = repairedElytra.getItemMeta();
 			elytraDisplayName.setDisplayName(renameText);
 			repairedElytra.setItemMeta(elytraDisplayName);
