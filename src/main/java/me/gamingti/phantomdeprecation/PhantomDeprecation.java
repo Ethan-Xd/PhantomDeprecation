@@ -1,13 +1,8 @@
 package me.gamingti.phantomdeprecation;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.entity.Item;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.inventory.AnvilInventory;
 import org.bukkit.inventory.ItemStack;
@@ -24,44 +19,6 @@ public final class PhantomDeprecation extends JavaPlugin implements Listener {
 	@Override
 	public void onEnable() {
 		getServer().getPluginManager().registerEvents(this, this);
-	}
-
-	@Override
-	public void onDisable() {
-
-	}
-
-	// On click see if we get the item
-	@EventHandler
-	public void onInventoryClick(InventoryClickEvent e) {
-		if (!(e.getWhoClicked() instanceof Player)) return;
-		Player player = (Player) e.getWhoClicked();
-
-		int eventSlot = e.getRawSlot();
-
-		return;
-
-		/*if (e.getView().getType() == InventoryType.ANVIL) {
-			if (eventSlot != 2) return; // If not the output slot
-
-			AnvilInventory anvil = (AnvilInventory) e.getInventory();
-
-			if (!anvilOutputCondition(anvil)) return;
-
-			ItemStack elytra = anvil.getItem(0);
-			ItemMeta elytraMeta = elytra.getItemMeta();
-			Repairable elytraMetaR = (Repairable) elytraMeta;
-			Damageable elytraMetaD = (Damageable) elytraMeta;
-
-			ItemStack leather = anvil.getItem(1);
-			int leatherUsing = leather.getAmount();
-			int maximumLeatherToUse = (int) Math.ceil(elytraMetaD.getDamage() / fixStep) + 1;
-			if (leatherUsing > maximumLeatherToUse) leatherUsing = maximumLeatherToUse;
-
-
-
-		}*/
-
 	}
 
 	@EventHandler
@@ -90,7 +47,7 @@ public final class PhantomDeprecation extends JavaPlugin implements Listener {
 		e.setResult(newElytra);
 		//((Player)e.getViewers().get(0)).updateInventory();
 
-		// TODO: Fix all leather being used if overpaying
+		// TODO: Fix all leather being used when repairing elytra if stack has overpay (#2)
 	}
 
 	// Return the repaired elytra ItemStack
@@ -136,7 +93,8 @@ public final class PhantomDeprecation extends JavaPlugin implements Listener {
 		// Is the elytra fully healed?
 		if (((Damageable)anvil.getItem(0).getItemMeta()).getDamage() == 0) return false;
 
-		// TODO: Fix visual glitch when PrepareAnvilEvent is fired and output remains identical to previous result
+		// TODO: Fix visual glitch when PrepareAnvilEvent is fired and output remains identical to previous result (#1)
+		// Should be possible within this function, if not then put in onPrepareAnvil
 
 		return true;
 	}
